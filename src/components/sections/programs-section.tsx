@@ -38,11 +38,27 @@ export const ProgramsSection = () => {
   const [payMethod, setPayMethod] = useState("ewallet");
   const [creating, setCreating] = useState(false);
   const [enrollmentId, setEnrollmentId] = useState<string | null>(null);
-  const midtransClientKey = (import.meta as any).env?.VITE_MIDTRANS_CLIENT_KEY as string | undefined;
-  const midtransIsProd = ((import.meta as any).env?.VITE_MIDTRANS_IS_PRODUCTION as string | undefined)?.toLowerCase() === 'true';
+  const env = import.meta.env as unknown as { VITE_MIDTRANS_CLIENT_KEY?: string; VITE_MIDTRANS_IS_PRODUCTION?: string };
+  const midtransClientKey = env?.VITE_MIDTRANS_CLIENT_KEY;
+  const midtransIsProd = (env?.VITE_MIDTRANS_IS_PRODUCTION || "false").toLowerCase() === 'true';
+
+  type Snap = {
+    pay: (
+      token: string,
+      options?: {
+        onSuccess?: (result: unknown) => void;
+        onPending?: (result: unknown) => void;
+        onError?: (error: unknown) => void;
+        onClose?: () => void;
+      }
+    ) => void;
+  };
+  declare global { interface Window { snap?: Snap } }
+
+  const errorMessage = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
   const loadSnap = async () => {
-    if ((window as any).snap) return;
+    if (window.snap) return;
     const script = document.createElement('script');
     script.src = midtransIsProd ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js';
     if (midtransClientKey) script.setAttribute('data-client-key', midtransClientKey);
@@ -60,7 +76,7 @@ export const ProgramsSection = () => {
         .select("id,title,description,price,duration,features,is_active")
         .eq("is_active", true)
         .order("created_at", { ascending: false });
-      if (!error) setPrograms((data as any) || []);
+      if (!error) setPrograms((data as Program[]) || []);
       setLoading(false);
     };
     load();
@@ -260,7 +276,7 @@ export const ProgramsSection = () => {
                         setEnrollmentId(eid);
                       }
                       // Create Midtrans Snap transaction
-                      const { data: trx, error: trxErr } = await supabase.functions.invoke("midtrans-create-transaction", {
+                      const { data: trx, error: trxErr } = await supabase.functions.invoke<{ token?: string; redirectUrl?: string }>("midtrans-create-transaction", {
                         body: {
                           enrollmentId: eid,
                           programId: selected.id,
@@ -270,15 +286,15 @@ export const ProgramsSection = () => {
                         },
                       });
                       if (trxErr) throw trxErr;
-                      const token = (trx as any)?.token as string | undefined;
-                      const redirectUrl = (trx as any)?.redirectUrl as string | undefined;
+                      const token = trx?.token;
+                      const redirectUrl = trx?.redirectUrl;
                       if (!token && redirectUrl) {
                         window.location.href = redirectUrl;
                         return;
                       }
                       if (!token) throw new Error("Token transaksi tidak tersedia");
                       await loadSnap();
-                      (window as any).snap.pay(token, {
+                      window.snap?.pay(token, {
                         onSuccess: () => {
                           toast({ title: "Pembayaran berhasil", description: "Paket akan aktif setelah konfirmasi." });
                           setCheckoutOpen(false);
@@ -286,16 +302,16 @@ export const ProgramsSection = () => {
                         onPending: () => {
                           toast({ title: "Menunggu pembayaran", description: "Selesaikan proses pembayaran Anda." });
                         },
-                        onError: (err: any) => {
+                        onError: (err: unknown) => {
                           console.error(err);
-                          toast({ title: "Terjadi kesalahan", description: "Silakan coba lagi.", variant: "destructive" });
+                          toast({ title: "Terjadi kesalahan", description: errorMessage(err), variant: "destructive" });
                         },
                         onClose: () => {
                           // user closed popup
                         },
                       });
-                    } catch (e: any) {
-                      toast({ title: "Gagal membuat pesanan", description: e.message, variant: "destructive" });
+                    } catch (e: unknown) {
+                      toast({ title: "Gagal membuat pesanan", description: errorMessage(e), variant: "destructive" });
                     } finally {
                       setCreating(false);
                     }

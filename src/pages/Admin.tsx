@@ -33,7 +33,7 @@ const Admin = () => {
   const loadData = async () => {
     setLoading(true);
     const { data } = await supabase.from("programs").select("*").order("created_at", { ascending: false });
-    setPrograms((data as any) || []);
+    setPrograms((data as Program[]) || []);
     setLoading(false);
   };
 
@@ -43,13 +43,14 @@ const Admin = () => {
 
   const onAddProgram = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const form = e.currentTarget as any;
-    const title = form.title.value as string;
-    const price = parseFloat(form.price.value);
-    const type = form.type.value as string; // CPNS/Kedinasan
-    const duration = form.duration.value as string;
-    const description = form.description.value as string;
-    const features = (form.features.value as string)
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    const title = String(fd.get("title") || "");
+    const price = parseFloat(String(fd.get("price") || "0"));
+    const type = String(fd.get("type") || ""); // CPNS/Kedinasan
+    const duration = String(fd.get("duration") || "");
+    const description = String(fd.get("description") || "");
+    const features = String(fd.get("features") || "")
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
@@ -101,30 +102,30 @@ const Admin = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="title">Judul Paket</Label>
-                    <Input id="title" placeholder="CPNS Intensif" required />
+                    <Input id="title" name="title" placeholder="CPNS Intensif" required />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="type">Kategori</Label>
-                    <Input id="type" placeholder="CPNS/Kedinasan" required />
+                    <Input id="type" name="type" placeholder="CPNS/Kedinasan" required />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="price">Harga (Rp)</Label>
-                    <Input id="price" type="number" min="0" step="1000" required />
+                    <Input id="price" name="price" type="number" min="0" step="1000" required />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="duration">Durasi</Label>
-                    <Input id="duration" placeholder="3 Bulan" />
+                    <Input id="duration" name="duration" placeholder="3 Bulan" />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="description">Deskripsi</Label>
-                  <Input id="description" placeholder="Deskripsi singkat paket" />
+                  <Input id="description" name="description" placeholder="Deskripsi singkat paket" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="features">Fitur (pisah dengan koma)</Label>
-                  <Input id="features" placeholder="Video, Bank Soal, Tryout, Grup Diskusi" />
+                  <Input id="features" name="features" placeholder="Video, Bank Soal, Tryout, Grup Diskusi" />
                 </div>
                 <Button type="submit" disabled={saving}>
                   {saving ? "Menyimpan..." : "Simpan Program"}
@@ -186,4 +187,3 @@ const Admin = () => {
 };
 
 export default Admin;
-

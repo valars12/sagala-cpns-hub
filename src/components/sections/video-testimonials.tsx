@@ -12,10 +12,9 @@ export const VideoTestimonialsSection = () => {
 
   const apiRef = useRef<CarouselApi | null>(null);
   useEffect(() => {
-    if (!apiRef.current) return;
     const id = setInterval(() => apiRef.current?.scrollNext(), 5000);
     return () => clearInterval(id);
-  }, [apiRef.current]);
+  }, []);
 
   return (
     <section id="video-testimonials" className="py-20 bg-muted/30">

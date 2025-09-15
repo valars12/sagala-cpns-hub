@@ -44,12 +44,8 @@ export const RegisterForm = ({ onSuccess, onSwitchToLogin }: Props) => {
         full_name: fullName,
         email,
         phone,
-        // extra fields will be added by migration; if absent, this is ignored by types at runtime
-        // @ts-ignore
         nickname,
-        // @ts-ignore
         province,
-        // @ts-ignore
         city,
       }).eq("user_id", uid);
     }
@@ -110,4 +106,3 @@ export const RegisterForm = ({ onSuccess, onSwitchToLogin }: Props) => {
     </form>
   );
 };
-

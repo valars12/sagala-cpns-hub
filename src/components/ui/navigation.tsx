@@ -14,7 +14,9 @@ export const Navigation = () => {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-    } catch {}
+    } catch (e) {
+      console.debug("signOut error ignored", e);
+    }
     try {
       // Clear any Supabase stored tokens
       for (let i = 0; i < localStorage.length; i++) {
@@ -33,7 +35,9 @@ export const Navigation = () => {
         }
       }
       toRemove.forEach((k) => localStorage.removeItem(k));
-    } catch {}
+    } catch (e) {
+      console.debug("localStorage cleanup error ignored", e);
+    }
     setIsMenuOpen(false);
     window.location.replace("/");
   };

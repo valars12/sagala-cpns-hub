@@ -57,12 +57,11 @@ export const AlumniSection = () => {
   const apiRef = useRef<CarouselApi | null>(null);
 
   useEffect(() => {
-    if (!apiRef.current) return;
     const id = setInterval(() => {
       apiRef.current?.scrollNext();
     }, 4000);
     return () => clearInterval(id);
-  }, [apiRef.current]);
+  }, []);
 
   return (
     <section id="alumni" className="py-20 bg-background">
@@ -153,4 +152,3 @@ export const AlumniSection = () => {
     </section>
   );
 };
-

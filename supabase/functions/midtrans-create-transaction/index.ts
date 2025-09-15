@@ -74,7 +74,13 @@ serve(async (req) => {
       ? "https://app.midtrans.com/snap/v1/transactions"
       : "https://app.sandbox.midtrans.com/snap/v1/transactions";
 
-    const payload: Record<string, any> = {
+    type SnapPayload = {
+      transaction_details: { order_id: string; gross_amount: number };
+      customer_details?: { first_name?: string; email?: string; phone?: string };
+      enabled_payments?: string[];
+      item_details?: Array<{ id: string; price: number; quantity: number; name: string }>;
+    };
+    const payload: SnapPayload = {
       transaction_details: { order_id, gross_amount: Math.round(amount) },
       customer_details: {
         first_name: customer?.name || "Customer",
@@ -114,4 +120,3 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: (e as Error).message }), { status: 500 });
   }
 });
-

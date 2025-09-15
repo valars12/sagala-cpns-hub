@@ -18,7 +18,7 @@ export const AuthDialog = ({ open, onOpenChange, defaultTab = "login" }: Props) 
         <DialogHeader>
           <DialogTitle className="text-center">{tab === "login" ? "Masuk Akun" : "Daftar Akun Baru"}</DialogTitle>
         </DialogHeader>
-        <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
+        <Tabs value={tab} onValueChange={(v: string) => setTab(v as "login" | "register")} className="w-full">
           <TabsList className="grid grid-cols-2 w-full">
             <TabsTrigger value="login">Masuk</TabsTrigger>
             <TabsTrigger value="register">Daftar</TabsTrigger>
@@ -34,4 +34,3 @@ export const AuthDialog = ({ open, onOpenChange, defaultTab = "login" }: Props) 
     </Dialog>
   );
 };
-

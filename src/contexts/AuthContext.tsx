@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
@@ -39,9 +39,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!error) setProfile(data as Profile);
   };
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (user) await loadProfile(user.id);
-  };
+  }, [user]);
 
   useEffect(() => {
     const init = async () => {
@@ -72,7 +72,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Force client-side cleanup to avoid sticky sessions
       try {
         localStorage.removeItem("sb-" + btoa("ickevbvqlzjnzzynohup") + "-auth-token");
-      } catch {}
+      } catch (e) {
+        // ignore
+      }
       setUser(null);
       setProfile(null);
     }
@@ -80,7 +82,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const value = useMemo(
     () => ({ user, profile, loading, refreshProfile, signOut: signOutSafe }),
-    [user, profile, loading]
+    [user, profile, loading, refreshProfile]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

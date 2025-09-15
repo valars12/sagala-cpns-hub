@@ -6,7 +6,7 @@ Website lengkap dengan landing page, paket dalam bentuk card, testimoni alumni, 
 
 - Navbar sederhana: Home, Paket, Kontak + tombol Masuk/Daftar.
 - Landing/beranda: alumni dalam card (nama, foto, pernyataan, instansi), testimoni, video testimoni, info/event.
-- Paket: data dinamis dari Supabase, detail paket, beli paket, checkout dengan pilihan metode pembayaran (simulasi manual). Siap diintegrasikan payment gateway (Midtrans/Xendit) via Supabase Edge Function.
+- Paket: data dinamis dari Supabase, detail paket, beli paket, checkout terintegrasi payment gateway Midtrans (Snap) via Supabase Edge Function.
 - Autentikasi: Daftar dengan nama lengkap, panggilan, email, HP, provinsi, kota, password. Verifikasi email via Supabase.
 - Pendaftaran: setelah daftar, user bisa beli paket, status pendaftaran tersimpan di tabel `enrollments`.
 - Admin Dashboard: tambah/aktif/nonaktif paket, lihat perkembangan secara ringkas. Akses khusus profil dengan role `admin`.
@@ -47,6 +47,20 @@ Pilihan B – manual via SQL Editor di Supabase:
 ```sql
 update public.profiles set role = 'admin' where email = 'email-anda@example.com';
 ```
+
+5) Akun Admin (disarankan)
+
+- Buat user admin melalui Supabase Dashboard → Authentication → Users → Add user
+  - Email: admin@sagalabimbel.com
+  - Password (sementara, ganti setelah login): S4gala!2025
+  - Centang “Email confirmed” (agar bisa langsung login)
+- Lalu di SQL Editor jalankan:
+
+```sql
+update public.profiles set role = 'admin' where email = 'admin@sagalabimbel.com';
+```
+
+- Login ke website dengan email dan password di atas, kemudian segera ubah password dari menu pengaturan akun (atau via Reset Password) untuk keamanan produksi.
 
 4) Verifikasi email
 
