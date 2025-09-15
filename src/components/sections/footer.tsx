@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Phone, Instagram, Mail, MapPin, Clock, Users } from "lucide-react";
-import sagalaLogo from "@/assets/sagala-logo.png";
+import sagalaLogo from "@/assets/sagalalogo-fix.png";
 
 export const Footer = () => {
   const quickLinks = [

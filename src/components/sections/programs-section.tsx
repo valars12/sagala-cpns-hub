@@ -1,39 +1,70 @@
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, BookOpen, Users, Clock, Award } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { ArrowRight, BookOpen, Users, Clock, Award, CheckCircle2 } from "lucide-react";
 import governmentOfficers from "@/assets/government-officers.jpg";
+import paket1 from "@/assets/paket-1.jpg";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { AuthDialog } from "@/components/auth/AuthDialog";
+
+type Program = {
+  id: string;
+  title: string;
+  description: string | null;
+  price: number;
+  duration: string | null;
+  features: string[] | null;
+  is_active: boolean | null;
+};
 
 export const ProgramsSection = () => {
-  const programs = [
-    {
-      title: "Program CPNS",
-      description: "Persiapan lengkap untuk seleksi CPNS dengan materi terkini dan strategi jitu",
-      features: ["Materi SKD Lengkap", "Try Out Berkala", "Analisis Hasil", "Bimbingan Personal"],
-      price: "Mulai dari Rp 299.000",
-      badge: "Populer",
-      bgColor: "primary-gradient",
-      textColor: "text-white"
-    },
-    {
-      title: "Program Kedinasan", 
-      description: "Bimbingan khusus untuk sekolah kedinasan seperti IPDN, STAN, PKN STAN",
-      features: ["Tes Akademik", "Tes Psikologi", "Tes Kesehatan", "Interview Preparation"],
-      price: "Mulai dari Rp 399.000",
-      badge: "Premium",
-      bgColor: "secondary-gradient",
-      textColor: "text-white"
-    },
-    {
-      title: "Private Mentoring",
-      description: "Bimbingan one-on-one dengan mentor berpengalaman untuk hasil maksimal",
-      features: ["Jadwal Fleksibel", "Materi Kustom", "Progress Tracking", "Garansi Hasil"],
-      price: "Mulai dari Rp 599.000",
-      badge: "Eksklusif",
-      bgColor: "bg-card",
-      textColor: "text-foreground"
-    }
-  ];
+  const { toast } = useToast();
+  const { user, profile } = useAuthContext();
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authDefaultTab, setAuthDefaultTab] = useState<"login" | "register">("register");
+
+  const [programs, setPrograms] = useState<Program[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<Program | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [payMethod, setPayMethod] = useState("ewallet");
+  const [creating, setCreating] = useState(false);
+  const [enrollmentId, setEnrollmentId] = useState<string | null>(null);
+  const midtransClientKey = (import.meta as any).env?.VITE_MIDTRANS_CLIENT_KEY as string | undefined;
+  const midtransIsProd = ((import.meta as any).env?.VITE_MIDTRANS_IS_PRODUCTION as string | undefined)?.toLowerCase() === 'true';
+
+  const loadSnap = async () => {
+    if ((window as any).snap) return;
+    const script = document.createElement('script');
+    script.src = midtransIsProd ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js';
+    if (midtransClientKey) script.setAttribute('data-client-key', midtransClientKey);
+    document.body.appendChild(script);
+    await new Promise((resolve) => {
+      script.onload = resolve;
+    });
+  };
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("programs")
+        .select("id,title,description,price,duration,features,is_active")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+      if (!error) setPrograms((data as any) || []);
+      setLoading(false);
+    };
+    load();
+  }, []);
 
   const stats = [
     { icon: Users, number: "10,000+", label: "Pengguna" },
@@ -72,46 +103,37 @@ export const ProgramsSection = () => {
           ))}
         </div>
 
-        {/* Programs Grid */}
+        {/* Programs Grid (dynamic) */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+          {loading && <div>Memuat paket...</div>}
+          {!loading && programs.length === 0 && <div>Tidak ada paket aktif.</div>}
           {programs.map((program, index) => (
-            <Card key={index} className={`relative overflow-hidden hover-lift transition-smooth ${program.bgColor} ${program.textColor} fade-up`} style={{ animationDelay: `${index * 0.1}s` }}>
-              {program.badge && (
-                <Badge className="absolute top-4 right-4 bg-white text-primary">
-                  {program.badge}
-                </Badge>
-              )}
+            <Card key={program.id} className={`relative overflow-hidden hover-lift transition-smooth fade-up`} style={{ animationDelay: `${index * 0.1}s` }}>
+              <div className="h-40 w-full overflow-hidden">
+                <img src={paket1} alt="Sampul Paket" className="w-full h-full object-cover" />
+              </div>
               <CardHeader>
                 <CardTitle className="text-2xl">{program.title}</CardTitle>
-                <CardDescription className={program.textColor === "text-white" ? "text-white/80" : ""}>
+                <CardDescription>
                   {program.description}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <ul className="space-y-2">
-                  {program.features.map((feature, featureIndex) => (
+                  {(program.features || []).map((feature, featureIndex) => (
                     <li key={featureIndex} className="flex items-center gap-2">
-                      <div className="h-1.5 w-1.5 bg-current rounded-full"></div>
+                      <div className="h-1.5 w-1.5 bg-primary rounded-full"></div>
                       {feature}
                     </li>
                   ))}
                 </ul>
-                <div className="border-t border-current/20 pt-4">
-                  <div className="text-lg font-semibold mb-4">{program.price}</div>
-                  <Button 
-                    className={`w-full ${program.textColor === "text-white" ? "bg-white text-primary hover:bg-white/90" : "primary-gradient text-white"}`}
-                    asChild
-                  >
-                    <a 
-                      href="https://wa.me/6283136485351?text=Hallo%20Sagala%20Bimbel%20Admin%2C%20saya%20ingin%20info%20tentang%20program"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2"
-                    >
-                      Daftar Sekarang
-                      <ArrowRight className="h-4 w-4" />
-                    </a>
-                  </Button>
+                <div className="border-t border-border pt-4">
+                  <div className="text-lg font-semibold mb-4">Rp {program.price.toLocaleString()}</div>
+                  <div className="flex gap-2">
+                    <Button className="primary-gradient text-white flex-1" onClick={() => { setSelected(program); setDetailsOpen(true); }}>
+                      Beli Paket <ArrowRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -153,6 +175,145 @@ export const ProgramsSection = () => {
             </Button>
           </div>
         </div>
+
+        {/* Details Dialog */}
+        <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Detail Paket</DialogTitle>
+            </DialogHeader>
+            {selected && (
+              <div className="space-y-3">
+                <div className="text-xl font-semibold">{selected.title}</div>
+                <div className="text-muted-foreground">{selected.description}</div>
+                <div className="text-sm">Durasi: {selected.duration || "-"}</div>
+                <Separator />
+                <div>
+                  <div className="font-medium mb-2">Fitur:</div>
+                  <ul className="list-disc pl-5 space-y-1">
+                    {(selected.features || []).map((f, i) => (
+                      <li key={i}>{f}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="text-lg font-bold">Harga: Rp {selected.price.toLocaleString()}</div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDetailsOpen(false)}>Tutup</Button>
+              <Button onClick={() => { setDetailsOpen(false); setCheckoutOpen(true); }}>Beli Sekarang</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Checkout Dialog */}
+        <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Checkout</DialogTitle>
+            </DialogHeader>
+            {!user ? (
+              <div className="space-y-3">
+                <p className="text-muted-foreground">Silakan masuk atau daftar untuk melanjutkan pembelian.</p>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => { setAuthDefaultTab("login"); setAuthOpen(true); }}>Masuk</Button>
+                  <Button className="primary-gradient" onClick={() => { setAuthDefaultTab("register"); setAuthOpen(true); }}>Daftar</Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-md border p-3">
+                  <div className="font-medium mb-1">Metode Pembayaran</div>
+                  <RadioGroup value={payMethod} onValueChange={setPayMethod} className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div className="flex items-center space-x-2 border rounded-md p-2">
+                      <RadioGroupItem value="ewallet" id="pay-ewallet" />
+                      <Label htmlFor="pay-ewallet">E-Wallet</Label>
+                    </div>
+                    <div className="flex items-center space-x-2 border rounded-md p-2">
+                      <RadioGroupItem value="bank" id="pay-bank" />
+                      <Label htmlFor="pay-bank">Transfer Bank</Label>
+                    </div>
+                    <div className="flex items-center space-x-2 border rounded-md p-2">
+                      <RadioGroupItem value="qris" id="pay-qris" />
+                      <Label htmlFor="pay-qris">QRIS</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Setelah pembayaran, klik tombol "Tandai Sudah Bayar". Paket akan aktif dan konfirmasi akan dikirim ke email Anda.
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setCheckoutOpen(false)}>Batal</Button>
+                  <Button disabled={creating} onClick={async () => {
+                    if (!selected || !user) return;
+                    setCreating(true);
+                    try {
+                      let eid = enrollmentId;
+                      if (!eid) {
+                        const { data, error } = await supabase
+                          .from("enrollments")
+                          .insert({ user_id: user.id, program_id: selected.id, status: "pending", payment_status: "pending" })
+                          .select("id")
+                          .single();
+                        if (error) throw error;
+                        eid = data?.id as string;
+                        setEnrollmentId(eid);
+                      }
+                      // Create Midtrans Snap transaction
+                      const { data: trx, error: trxErr } = await supabase.functions.invoke("midtrans-create-transaction", {
+                        body: {
+                          enrollmentId: eid,
+                          programId: selected.id,
+                          amount: selected.price,
+                          preferred_method: payMethod,
+                          customer: { name: profile?.full_name, email: profile?.email, phone: profile?.phone },
+                        },
+                      });
+                      if (trxErr) throw trxErr;
+                      const token = (trx as any)?.token as string | undefined;
+                      const redirectUrl = (trx as any)?.redirectUrl as string | undefined;
+                      if (!token && redirectUrl) {
+                        window.location.href = redirectUrl;
+                        return;
+                      }
+                      if (!token) throw new Error("Token transaksi tidak tersedia");
+                      await loadSnap();
+                      (window as any).snap.pay(token, {
+                        onSuccess: () => {
+                          toast({ title: "Pembayaran berhasil", description: "Paket akan aktif setelah konfirmasi." });
+                          setCheckoutOpen(false);
+                        },
+                        onPending: () => {
+                          toast({ title: "Menunggu pembayaran", description: "Selesaikan proses pembayaran Anda." });
+                        },
+                        onError: (err: any) => {
+                          console.error(err);
+                          toast({ title: "Terjadi kesalahan", description: "Silakan coba lagi.", variant: "destructive" });
+                        },
+                        onClose: () => {
+                          // user closed popup
+                        },
+                      });
+                    } catch (e: any) {
+                      toast({ title: "Gagal membuat pesanan", description: e.message, variant: "destructive" });
+                    } finally {
+                      setCreating(false);
+                    }
+                  }}>
+                    Lanjutkan Pembayaran
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2 text-green-600 text-sm">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Pembayaran via e-wallet, transfer bank/VA, dan QRIS didukung (Midtrans Snap).
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Local Auth Dialog */}
+        <AuthDialog open={authOpen} onOpenChange={setAuthOpen} defaultTab={authDefaultTab} />
       </div>
     </section>
   );
