@@ -4,3 +4,4 @@ export default {
     autoprefixer: {},
   },
 };
+// You can also use `postcssJs` to export JS object

@@ -20,3 +20,4 @@
   },
   "include": ["vite.config.ts"]
 }
+// You can also use `tsconfigJson` to export JSON object

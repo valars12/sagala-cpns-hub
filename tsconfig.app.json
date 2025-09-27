@@ -28,3 +28,4 @@
   },
   "include": ["src"]
 }
+// You can also use `tsconfigJson` to export JSON object

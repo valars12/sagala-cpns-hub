@@ -24,3 +24,4 @@ export default tseslint.config(
     },
   },
 );
+// You can also use `tseslint.flatConfig` for Flat Config
