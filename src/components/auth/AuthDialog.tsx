@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoginForm } from "./LoginForm";
@@ -12,6 +12,12 @@ type Props = {
 
 export const AuthDialog = ({ open, onOpenChange, defaultTab = "login" }: Props) => {
   const [tab, setTab] = useState<"login" | "register">(defaultTab);
+
+  useEffect(() => {
+    if (!open) return;
+    setTab(defaultTab);
+  }, [defaultTab, open]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,17 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 
 type Props = { onSuccess?: () => void; onSwitchToLogin?: () => void };
+
+const resolveRedirectUrl = () => {
+  const configured = (import.meta.env.VITE_PUBLIC_SITE_URL as string | undefined)?.trim();
+  const base = configured && configured.length > 0
+    ? configured
+    : typeof window !== "undefined"
+      ? window.location.origin
+      : "";
+  if (!base) return "/auth/callback";
+  return `${base.replace(/\/$/, "")}/auth/callback`;
+};
 
 export const RegisterForm = ({ onSuccess, onSwitchToLogin }: Props) => {
   const { toast } = useToast();
@@ -18,16 +29,32 @@ export const RegisterForm = ({ onSuccess, onSwitchToLogin }: Props) => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const emailRedirectTo = useMemo(resolveRedirectUrl, []);
+
+  const clearForm = () => {
+    setFullName("");
+    setNickname("");
+    setEmail("");
+    setPhone("");
+    setProvince("");
+    setCity("");
+    setPassword("");
+  };
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
-    // Sign up with email verification; store metadata
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const payloadPassword = password.trim();
+
     const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
+      email: normalizedEmail,
+      password: payloadPassword,
       options: {
-        data: { full_name: fullName, phone, nickname, province, city },
-        emailRedirectTo: window.location.origin,
+        data: { full_name: fullName.trim(), phone: phone.trim(), nickname: nickname.trim(), province: province.trim(), city: city.trim() },
+        emailRedirectTo,
       },
     });
 
@@ -37,23 +64,26 @@ export const RegisterForm = ({ onSuccess, onSwitchToLogin }: Props) => {
       return;
     }
 
-    // Update profile table with extra fields (trigger inserts basic profile)
     const uid = data.user?.id;
     if (uid) {
-      await supabase.from("profiles").update({
-        full_name: fullName,
-        email,
-        phone,
-        nickname,
-        province,
-        city,
-      }).eq("user_id", uid);
+      await supabase
+        .from("profiles")
+        .upsert({
+          user_id: uid,
+          full_name: fullName.trim(),
+          email: normalizedEmail,
+          phone: phone.trim(),
+          nickname: nickname.trim(),
+          province: province.trim(),
+          city: city.trim(),
+        }, { onConflict: "user_id" });
     }
 
     setLoading(false);
+    clearForm();
     toast({
       title: "Pendaftaran berhasil",
-      description: "Cek email Anda untuk verifikasi dan kode autentikasi.",
+      description: "Cek email Anda dan klik tautan verifikasi untuk mengaktifkan akun.",
     });
     onSuccess?.();
   };
@@ -92,7 +122,7 @@ export const RegisterForm = ({ onSuccess, onSwitchToLogin }: Props) => {
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">Kata Sandi</Label>
-        <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
       </div>
       <Button type="submit" className="w-full" disabled={loading}>
         {loading ? "Memproses..." : "Daftar"}

@@ -1,48 +1,37 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Phone, Instagram, LogIn, UserPlus, LogOut, LayoutDashboard } from "lucide-react";
 import sagalaLogo from "@/assets/sagalalogo-fix.png";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { AuthDialog } from "@/components/auth/AuthDialog";
 
 export const Navigation = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [authDefaultTab, setAuthDefaultTab] = useState<"login" | "register">("login");
   const { user, profile, signOut } = useAuthContext();
+
   const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (e) {
-      console.debug("signOut error ignored", e);
-    }
-    try {
-      // Clear any Supabase stored tokens
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (!k) continue;
-        if (k.startsWith("sb-") && k.endsWith("-auth-token")) {
-          // delay removal until after iteration to avoid index shift
-        }
-      }
-      // Remove after collecting keys
-      const toRemove: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && k.startsWith("sb-") && (k.includes("-auth-token") || k.includes("-auth-refresh-token"))) {
-          toRemove.push(k);
-        }
-      }
-      toRemove.forEach((k) => localStorage.removeItem(k));
-    } catch (e) {
-      console.debug("localStorage cleanup error ignored", e);
-    }
     setIsMenuOpen(false);
-    window.location.replace("/");
+    await signOut();
   };
 
-  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+  const toggleMenu = () => setIsMenuOpen((prev) => !prev);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const authParam = params.get("auth");
+    if (authParam === "login" || authParam === "register") {
+      setAuthDefaultTab(authParam);
+      setAuthOpen(true);
+      params.delete("auth");
+      const nextSearch = params.toString();
+      navigate({ pathname: location.pathname, search: nextSearch ? `?${nextSearch}` : "", hash: location.hash }, { replace: true });
+    }
+  }, [location, navigate]);
 
   const menuItems = [
     { name: "Home", href: "#home" },
@@ -107,7 +96,7 @@ export const Navigation = () => {
                     <Phone className="h-4 w-4" /> Kontak
                   </a>
                 </Button>
-                <Button variant="ghost" size="sm" type="button" onMouseDown={handleLogout} onClick={handleLogout} className="text-destructive transition-bounce active:scale-95 pointer-events-auto cursor-pointer">
+                <Button variant="ghost" size="sm" type="button" onClick={handleLogout} className="text-destructive transition-bounce active:scale-95 pointer-events-auto cursor-pointer">
                   <LogOut className="h-4 w-4 mr-1" /> Keluar
                 </Button>
               </>
@@ -166,7 +155,7 @@ export const Navigation = () => {
                         <a href="/admin" className="w-full flex items-center justify-center gap-2"><LayoutDashboard className="h-4 w-4" /> Dashboard</a>
                       </Button>
                     )}
-                    <Button variant="ghost" size="sm" type="button" onMouseDown={handleLogout} onClick={handleLogout} className="text-destructive w-full transition-bounce active:scale-95 pointer-events-auto cursor-pointer">
+                    <Button variant="ghost" size="sm" type="button" onClick={handleLogout} className="text-destructive w-full transition-bounce active:scale-95 pointer-events-auto cursor-pointer">
                       <LogOut className="h-4 w-4 mr-1" /> Keluar
                     </Button>
                   </>
@@ -180,4 +169,3 @@ export const Navigation = () => {
     </nav>
   );
 };
-
