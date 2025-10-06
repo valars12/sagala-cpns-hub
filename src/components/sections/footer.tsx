@@ -24,8 +24,8 @@ export const Footer = () => {
     {
       icon: Phone,
       label: "WhatsApp",
-      value: "+62 831-3648-5351",
-      href: "https://wa.me/6283136485351?text=Hallo%20Sagala%20Bimbel%20Admin%2C%20saya%20ingin%20berkonsultasi"
+      value: "+62 821-3723-3397",
+      href: "https://wa.me/6282137233397?text=Halo%20Sagala%20Bimbel%20Admin%2C%20saya%20ingin%20berkonsultasi"
     },
     {
       icon: Instagram,
@@ -135,7 +135,7 @@ export const Footer = () => {
                 asChild
               >
                 <a
-                  href="https://wa.me/6283136485351?text=Hallo%20Sagala%20Bimbel%20Admin%2C%20saya%20ingin%20berkonsultasi"
+                  href="https://wa.me/6282137233397?text=Halo%20Sagala%20Bimbel%20Admin%2C%20saya%20ingin%20berkonsultasi"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2"
@@ -182,3 +182,4 @@ export const Footer = () => {
     </footer>
   );
 };
+

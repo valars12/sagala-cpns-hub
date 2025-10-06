@@ -3,11 +3,11 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 
 export const VideoTestimonialsSection = () => {
   const videos = [
-    { id: "dQw4w9WgXcQ", title: "Testimoni Alumni CPNS" },
-    { id: "Zi_XLOBDo_Y", title: "Pengalaman Kedinasan" },
-    { id: "3GwjfUFyY6M", title: "Tips Lulus Seleksi" },
-    { id: "C0DPdy98e4c", title: "Strategi SKD" },
-    { id: "kXYiU_JCYtU", title: "Kisah Sukses" },
+    { id: "ExZUl-I4STQ", title: "Real Testi Bimbel Mentor CPNS" },
+    { id: "ffqRSJi--2E", title: "Testimoni Kelas SKD Kedinasan" },
+    { id: "uUctbsU9fAk", title: "Testimoni Siswa kedinasan.id" },
+    { id: "lj69WmpVeUY", title: "Testimoni Bimbel Taruna Persada" },
+    { id: "1lJmx9jtntY", title: "Testimoni Bimbel Science Society" },
   ];
 
   const apiRef = useRef<CarouselApi | null>(null);
@@ -48,3 +48,4 @@ export const VideoTestimonialsSection = () => {
     </section>
   );
 };
+

@@ -99,7 +99,7 @@ export const Navigation = () => {
                 </Button>
                 <Button className="primary-gradient hover-lift transition-bounce active:scale-95" size="sm" asChild>
                   <a
-                    href="https://wa.me/6283136485351?text=Hallo%20Sagala%20Bimbel%20Admin%2C%20saya%20ingin%20berkonsultasi"
+                    href="https://wa.me/6282137233397?text=Halo%20Sagala%20Bimbel%20Admin%2C%20saya%20ingin%20berkonsultasi"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2"
@@ -126,11 +126,12 @@ export const Navigation = () => {
           {/* Mobile menu button */}
           <Button
             variant="ghost"
-            size="sm"
-            className="md:hidden"
+            size="icon"
+            className="md:hidden h-12 w-12 rounded-xl border border-border/60 bg-background/80 shadow-soft transition-smooth"
             onClick={toggleMenu}
+            aria-label={isMenuOpen ? "Tutup menu navigasi" : "Buka menu navigasi"}
           >
-            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {isMenuOpen ? <X className="h-7 w-7" /> : <Menu className="h-7 w-7" />}
           </Button>
         </div>
 
@@ -179,3 +180,4 @@ export const Navigation = () => {
     </nav>
   );
 };
+

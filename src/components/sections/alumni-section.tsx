@@ -129,7 +129,7 @@ export const AlumniSection = () => {
               <p className="text-white/90 mb-6 text-lg">Bergabunglah sekarang dan raih impianmu menjadi abdi negara!</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <a
-                  href="https://wa.me/6283136485351?text=Hallo%20Sagala%20Bimbel%20Admin%2C%20saya%20ingin%20bergabung"
+                  href="https://wa.me/6282137233397?text=Halo%20Sagala%20Bimbel%20Admin%2C%20saya%20ingin%20bergabung"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 bg-white text-primary hover:bg-white/90 px-6 py-3 rounded-lg font-medium transition-smooth hover-lift"
@@ -152,3 +152,4 @@ export const AlumniSection = () => {
     </section>
   );
 };
+

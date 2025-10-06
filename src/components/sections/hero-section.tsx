@@ -48,11 +48,11 @@ export const HeroSection = () => {
             <Button
               variant="outline"
               size="lg"
-              className="border-white text-white hover:bg-white hover:text-primary transition-smooth text-lg px-8 py-6 hover-lift"
+              className="border-white/70 bg-white/10 text-white hover:bg-white/20 hover:text-white transition-smooth text-lg px-8 py-6 hover-lift backdrop-blur"
               asChild
             >
               <a
-                href="https://wa.me/6283136485351?text=Hallo%20Sagala%20Bimbel%20Admin%2C%20saya%20ingin%20berkonsultasi"
+                href="https://wa.me/6282137233397?text=Halo%20Sagala%20Bimbel%20Admin%2C%20saya%20ingin%20berkonsultasi"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -118,3 +118,4 @@ export const HeroSection = () => {
     </section>
   );
 };
+

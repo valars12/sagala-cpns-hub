@@ -175,9 +175,10 @@ const CarouselPrevious = React.forwardRef<HTMLButtonElement, React.ComponentProp
         variant={variant}
         size={size}
         className={cn(
-          "absolute h-8 w-8 rounded-full",
+          "absolute h-10 w-10 rounded-full bg-background/90 border border-border/70 text-foreground shadow-soft transition-smooth hover:bg-background/80 focus-visible:ring-primary",
+          "max-sm:h-10 max-sm:w-10",
           orientation === "horizontal"
-            ? "-left-12 top-1/2 -translate-y-1/2"
+            ? "-left-12 top-1/2 -translate-y-1/2 max-sm:left-3"
             : "-top-12 left-1/2 -translate-x-1/2 rotate-90",
           className,
         )}
@@ -185,7 +186,7 @@ const CarouselPrevious = React.forwardRef<HTMLButtonElement, React.ComponentProp
         onClick={scrollPrev}
         {...props}
       >
-        <ArrowLeft className="h-4 w-4" />
+        <ArrowLeft className="h-5 w-5" />
         <span className="sr-only">Previous slide</span>
       </Button>
     );
@@ -203,9 +204,10 @@ const CarouselNext = React.forwardRef<HTMLButtonElement, React.ComponentProps<ty
         variant={variant}
         size={size}
         className={cn(
-          "absolute h-8 w-8 rounded-full",
+          "absolute h-10 w-10 rounded-full bg-background/90 border border-border/70 text-foreground shadow-soft transition-smooth hover:bg-background/80 focus-visible:ring-primary",
+          "max-sm:h-10 max-sm:w-10",
           orientation === "horizontal"
-            ? "-right-12 top-1/2 -translate-y-1/2"
+            ? "-right-12 top-1/2 -translate-y-1/2 max-sm:right-3"
             : "-bottom-12 left-1/2 -translate-x-1/2 rotate-90",
           className,
         )}
@@ -213,7 +215,7 @@ const CarouselNext = React.forwardRef<HTMLButtonElement, React.ComponentProps<ty
         onClick={scrollNext}
         {...props}
       >
-        <ArrowRight className="h-4 w-4" />
+        <ArrowRight className="h-5 w-5" />
         <span className="sr-only">Next slide</span>
       </Button>
     );
@@ -222,3 +224,4 @@ const CarouselNext = React.forwardRef<HTMLButtonElement, React.ComponentProps<ty
 CarouselNext.displayName = "CarouselNext";
 
 export { type CarouselApi, Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext };
+

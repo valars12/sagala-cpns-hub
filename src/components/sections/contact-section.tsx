@@ -7,7 +7,7 @@ export const ContactSection = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
-  const wa = (text: string) => `https://wa.me/6283136485351?text=${encodeURIComponent(text)}`;
+  const wa = (text: string) => `https://wa.me/6282137233397?text=${encodeURIComponent(text)}`;
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,11 +36,22 @@ export const ContactSection = () => {
             </div>
             <div className="space-y-2 text-left">
               <Label>Pesan</Label>
-              <textarea className="w-full border rounded-md p-2 min-h-[120px] bg-background" placeholder="Tulis pesan" value={message} onChange={(e) => setMessage(e.target.value)} required />
+              <textarea
+                className="w-full border rounded-md p-2 min-h-[120px] bg-background"
+                placeholder="Tulis pesan"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                required
+              />
             </div>
-            <div className="flex items-center justify-center gap-3">
-              <Button type="submit" className="primary-gradient transition-bounce active:scale-95">Kirim via WhatsApp</Button>
-              <a className="text-primary" target="_blank" href="https://wa.me/6283136485351" rel="noreferrer">WA: +62 831-3648-5351</a>
+            <div className="flex items-center justify-center">
+              <Button
+                type="submit"
+                className="primary-gradient transition-bounce active:scale-95 px-8"
+                aria-label="Kirim pesan ke Sagala Bimbel melalui WhatsApp"
+              >
+                Kirim via WhatsApp
+              </Button>
             </div>
           </form>
         </div>
@@ -48,3 +59,4 @@ export const ContactSection = () => {
     </section>
   );
 };
+
