@@ -1,24 +1,23 @@
-import { Navigation } from "@/components/ui/navigation";
-import { HeroSection } from "@/components/sections/hero-section";
-import { ProgramsSection } from "@/components/sections/programs-section";
-import { AlumniSection } from "@/components/sections/alumni-section";
-import { Footer } from "@/components/sections/footer";
-import { VideoTestimonialsSection } from "@/components/sections/video-testimonials";
-import { EventsSection } from "@/components/sections/events-section";
-import { ContactSection } from "@/components/sections/contact-section";
+import Navbar from "@/components/Navbar";
+import Hero from "@/components/Hero";
+import Programs from "@/components/Programs";
+import Contact from "@/components/Contact";
+import Footer from "@/components/Footer";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 const Index = () => {
+  const { user } = useAuth();
+  if (user?.role === "admin" || user?.role === "teacher") {
+    return <Navigate to="/admin" replace />;
+  }
+
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <main>
-        <HeroSection />
-        <ProgramsSection />
-        <AlumniSection />
-        <VideoTestimonialsSection />
-        <EventsSection />
-        <ContactSection />
-      </main>
+    <div className="min-h-screen">
+      <Navbar />
+      <Hero />
+      <Programs />
+      <Contact />
       <Footer />
     </div>
   );

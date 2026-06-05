@@ -1,0 +1,309 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String         @id @default(cuid())
+  name         String
+  username     String?        @unique
+  email        String         @unique
+  phone        String?
+  passwordHash String?
+  avatarUrl    String?
+  provider     String         @default("STANDARD")
+  role         String         @default("student")
+  registrationSource String   @default("UNKNOWN")
+  isValidated  Boolean        @default(true)
+  sessionVersion Int          @default(0)
+  activeDeviceId String?
+  activeDeviceLabel String?
+  activeSessionStartedAt DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  purchases    Purchase[]
+  tryoutAttempts TryoutAttempt[]
+  tryoutProgresses TryoutProgress[]
+  createdModules Module[]      @relation("ModuleCreatedBy")
+  createdClasses StudyClass[]  @relation("StudyClassCreatedBy")
+  createdTryoutAssignments ClassTryoutAssignment[] @relation("ClassTryoutAssignmentCreatedBy")
+  teachingClassLinks ClassTeacher[] @relation("ClassTeacherUser")
+  studentClassLinks ClassStudent[] @relation("ClassStudentUser")
+  moduleAccesses UserModuleAccess[] @relation("UserModuleAccesses")
+  grantedModuleAccesses UserModuleAccess[] @relation("ModuleAccessGrantedBy")
+}
+
+model Package {
+  id           String      @id @default(cuid())
+  slug         String      @unique
+  title        String
+  subtitle     String?
+  description  String
+  category     String
+  level        String?
+  imageUrl     String?
+  price        Int
+  discountPercent Int @default(50)
+  durationDays Int
+  tryoutDurationMinutes Int @default(100)
+  latihanDurationMinutes Int @default(20)
+  tryoutAccessStart Int @default(1)
+  tryoutAccessEnd Int?
+  latihanAccessStart Int @default(1)
+  latihanAccessEnd Int?
+  sessionSourcePackageIds String?
+  badge        String?
+  features     String
+  whatsIncluded String
+  highlights   String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  purchases    Purchase[]
+  questions    Question[]
+  tryoutAttempts TryoutAttempt[]
+  tryoutProgresses TryoutProgress[]
+  classTryoutAssignments ClassTryoutAssignment[]
+  moduleLinks  PackageModule[]
+}
+
+model Purchase {
+  id              String          @id @default(cuid())
+  orderCode       String          @unique
+  user            User            @relation(fields: [userId], references: [id])
+  userId          String
+  package         Package         @relation(fields: [packageId], references: [id])
+  packageId       String
+  status          String          @default("PENDING")
+  hiddenAt        DateTime?
+  isAdminGranted  Boolean         @default(false)
+  paymentMethod   String?
+  paymentType     String?
+  paidAt          DateTime?
+  startDate       DateTime?
+  endDate         DateTime?
+  snapToken       String?
+  snapRedirectUrl String?
+  midtransOrderId String?
+  grossAmount     Int
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model Question {
+  id          String   @id @default(cuid())
+  package     Package  @relation(fields: [packageId], references: [id])
+  packageId   String
+  category    String   @default("TIU")
+  sessionType String   @default("TRYOUT")
+  sessionCode String   @default("TRYOUT-1")
+  sessionTitle String  @default("Tryout 1")
+  sessionOrder Int     @default(1)
+  questionOrder Int    @default(1)
+  subtestTitle String  @default("Subtest Umum")
+  prompt      String
+  promptImageUrl String?
+  promptPdfDataUrl String?
+  promptPdfFileName String?
+  options     String
+  answer      String
+  explanation String?
+  explanationImageUrl String?
+  createdAt   DateTime @default(now())
+
+  @@index([packageId, sessionType, sessionOrder, questionOrder])
+}
+
+model QuestionBackup {
+  id               String   @id @default(cuid())
+  action           String
+  questionId       String?
+  packageId        String?
+  packageTitle     String?
+  sessionType      String?
+  sessionOrder     Int?
+  sessionCode      String?
+  sessionTitle     String?
+  category         String?
+  subtestTitle     String?
+  promptExcerpt    String?
+  snapshot         String
+  actorId          String?
+  actorName        String?
+  actorRole        String?
+  restoredAt       DateTime?
+  restoredById     String?
+  restoredByName   String?
+  restoredQuestionId String?
+  createdAt        DateTime @default(now())
+
+  @@index([questionId, createdAt(sort: Desc)])
+  @@index([packageId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+}
+
+model TryoutAttempt {
+  id             String   @id @default(cuid())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  package        Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  packageId      String
+  totalQuestions Int
+  answeredCount  Int
+  correctCount   Int
+  wrongCount     Int
+  blankCount     Int
+  score          Int
+  maxScore       Int
+  percentage     Int
+  sessionType    String   @default("TRYOUT")
+  sessionCode    String?
+  sessionTitle   String?
+  durationSeconds Int?
+  perCategory    String
+  answers        String?
+  completedAt    DateTime @default(now())
+
+  @@index([userId, completedAt(sort: Desc)])
+  @@index([packageId])
+}
+
+model TryoutProgress {
+  id                 String   @id @default(cuid())
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId             String
+  package            Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  packageId          String
+  sessionType        String   @default("TRYOUT")
+  sessionCode        String
+  sessionTitle       String?
+  sessionOrder       Int      @default(1)
+  totalQuestions     Int
+  totalDurationSeconds Int
+  startedAt          DateTime @default(now())
+  expiresAt          DateTime
+  activeQuestionIndex Int     @default(0)
+  answers            String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([userId, packageId, sessionType, sessionOrder])
+  @@index([userId, updatedAt(sort: Desc)])
+  @@index([packageId])
+}
+
+model StudyClass {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdBy   User?    @relation("StudyClassCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  teacherLinks ClassTeacher[]
+  studentLinks ClassStudent[]
+  tryoutAssignments ClassTryoutAssignment[]
+
+  @@unique([name])
+}
+
+model ClassTryoutAssignment {
+  id          String   @id @default(cuid())
+  studyClass  StudyClass @relation(fields: [studyClassId], references: [id], onDelete: Cascade)
+  studyClassId String
+  package     Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  packageId   String
+  sessionType String   @default("TRYOUT")
+  sessionOrder Int     @default(1)
+  sessionCode String?
+  sessionTitle String?
+  startAt     DateTime
+  endAt       DateTime
+  isActive    Boolean  @default(true)
+  createdBy   User?    @relation("ClassTryoutAssignmentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([studyClassId, packageId, sessionType, sessionOrder])
+  @@index([packageId, sessionType, sessionOrder])
+  @@index([startAt, endAt])
+}
+
+model ClassTeacher {
+  id          String   @id @default(cuid())
+  studyClass  StudyClass @relation(fields: [studyClassId], references: [id], onDelete: Cascade)
+  studyClassId String
+  teacher     User     @relation("ClassTeacherUser", fields: [teacherId], references: [id], onDelete: Cascade)
+  teacherId   String
+  createdAt   DateTime @default(now())
+
+  @@unique([studyClassId, teacherId])
+  @@index([teacherId])
+  @@index([studyClassId])
+}
+
+model ClassStudent {
+  id          String   @id @default(cuid())
+  studyClass  StudyClass @relation(fields: [studyClassId], references: [id], onDelete: Cascade)
+  studyClassId String
+  student     User     @relation("ClassStudentUser", fields: [studentId], references: [id], onDelete: Cascade)
+  studentId   String
+  createdAt   DateTime @default(now())
+
+  @@unique([studyClassId, studentId])
+  @@index([studentId])
+  @@index([studyClassId])
+}
+
+model Module {
+  id          String   @id @default(cuid())
+  title       String
+  bab         String?
+  subBab      String?
+  summary     String?
+  content     String?
+  pdfDataUrl  String?
+  pdfFileName String?
+  pptDataUrl  String?
+  pptFileName String?
+  isPublished Boolean  @default(true)
+  createdBy   User     @relation("ModuleCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  accesses    UserModuleAccess[]
+  packageLinks PackageModule[]
+}
+
+model UserModuleAccess {
+  id          String   @id @default(cuid())
+  user        User     @relation("UserModuleAccesses", fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  moduleId    String
+  grantedBy   User     @relation("ModuleAccessGrantedBy", fields: [grantedById], references: [id], onDelete: Cascade)
+  grantedById String
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, moduleId])
+  @@index([userId])
+  @@index([moduleId])
+}
+
+model PackageModule {
+  id        String   @id @default(cuid())
+  package   Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  packageId String
+  module    Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  moduleId  String
+  createdAt DateTime @default(now())
+
+  @@unique([packageId, moduleId])
+  @@index([packageId])
+  @@index([moduleId])
+}

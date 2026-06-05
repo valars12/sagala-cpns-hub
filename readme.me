@@ -1,0 +1,433 @@
+# Dokumentasi Revisi Sagala Bimbel
+
+## Ringkasan Revisi Terbaru
+
+Website Sagala Bimbel memakai struktur frontend React + TypeScript dan backend Node.js + Express + Prisma. Domain production yang dipakai adalah:
+
+- Frontend: `https://sagalabimbel.id`
+- Backend/API: `https://api.sagalabimbel.id`
+- Email resmi: `sagala18@gmail.com`
+- WhatsApp: `+62 821-3723-3397`
+- Instagram: `@sagala_bimbel`
+
+Autentikasi sudah diubah menjadi username dan password saja. Login/register tidak memakai email dan tidak memakai akun pihak ketiga.
+
+## Struktur Project Yang Dipakai
+
+Folder/file penting frontend:
+
+- `src/`: source React + TypeScript.
+- `src/pages/`: halaman utama, login, register, dashboard, admin, teacher, paket, latihan.
+- `src/components/`: komponen UI, navbar, footer, kontak, admin manager, proteksi konten.
+- `public/`: asset publik, `.htaccess`, `robots.txt`, `sitemap.xml`.
+- `index.html`: metadata SEO domain `sagalabimbel.id` dan font.
+- `.env.production.example`: contoh env build frontend production.
+- `package.json`: script install/build frontend.
+
+Folder/file penting backend:
+
+- `server/index.js`: entry point untuk cPanel Node.js App.
+- `server/src/`: source backend Express.
+- `server/src/routes/auth.ts`: login/register/logout/profile username-password.
+- `server/src/routes/admin.ts`: fitur admin/teacher.
+- `server/src/routes/user.ts`: dashboard user dan profil.
+- `server/prisma/schema.prisma`: schema database PostgreSQL.
+- `server/prisma/migrations/`: migration database.
+- `server/prisma/seed.ts`: seed paket/soal default.
+- `server/.env.example`: contoh env backend.
+- `server/package.json`: script build/start backend.
+
+## Perubahan File Penting
+
+Identitas/domain:
+
+- `index.html`: canonical, Open Graph, dan metadata memakai `https://sagalabimbel.id`.
+- `public/robots.txt`: sitemap mengarah ke `https://sagalabimbel.id/sitemap.xml`.
+- `public/sitemap.xml`: semua URL memakai `https://sagalabimbel.id`.
+- `.env.production.example`: `VITE_API_URL=https://api.sagalabimbel.id`.
+- `server/.env.example`: env backend tanpa OAuth pihak ketiga.
+
+Autentikasi username/password:
+
+- `src/main.tsx`: provider OAuth dihapus.
+- `src/context/AuthContext.tsx`: login/register memakai `username` dan `password`.
+- `src/pages/Login.tsx`: form login hanya username dan password.
+- `src/pages/Register.tsx`: form daftar hanya username dan password.
+- `server/src/routes/auth.ts`: endpoint `/api/auth/register` dan `/api/auth/login` memakai username.
+- `server/prisma/schema.prisma`: field `username` ditambahkan sebagai identitas unik.
+- `server/prisma/migrations/20260606090000_add_username_login/migration.sql`: migration username.
+- `server/prisma/migrations/20260606091000_remove_google_oauth/migration.sql`: membersihkan kolom OAuth legacy.
+
+Admin/teacher/user:
+
+- `src/pages/AdminDashboard.tsx`: tambah/edit akun memakai username, bukan email.
+- `src/pages/Dashboard.tsx`: profil menampilkan username; update profil tidak mengirim email.
+- `src/components/admin/ClassManager.tsx`: pencarian guru/siswa memakai nama/username.
+- `src/components/admin/ModuleManager.tsx`: tabel akses modul menampilkan username.
+- `src/components/admin/TryoutScoreMonitor.tsx`: monitoring skor menampilkan username.
+- `src/components/admin/TeacherOverviewPanel.tsx`: ringkasan teacher menampilkan username.
+- `server/src/routes/admin.ts`: create/update user admin memakai username; search skor menerima username.
+- `server/src/routes/user.ts`: update profil tidak menerima email.
+
+UI/UX:
+
+- `src/index.css`: palette diganti ke deep teal, evergreen, dan gold; font global diganti ke `Plus Jakarta Sans` + `Fraunces`; smooth scroll tetap aktif.
+- `index.html`: font production dimuat dari Google Fonts.
+- `src/components/security/ContentProtection.tsx`: class proteksi konten memakai prefix `sagala-`, bukan prefix sumber clone.
+- `src/pages/Login.tsx` dan `src/pages/Register.tsx`: layout auth dibuat berbeda dengan kartu gradient Sagala.
+- `src/components/Contact.tsx`: form konsultasi tidak meminta email pengunjung; hanya nama, WhatsApp, dan pesan.
+- `src/pages/PackageDetail.tsx`: pesan checkout tidak lagi meminta user mengecek email.
+
+Dependency:
+
+- `package.json` dan `package-lock.json`: dependency OAuth frontend dihapus.
+- `server/package.json` dan `server/package-lock.json`: dependency OAuth backend dihapus.
+
+## Langkah cPanel Domainesia Berdasarkan Screenshot
+
+### 1. Pastikan domain utama benar
+
+Masuk cPanel Domainesia, buka menu `Domains` atau `Domains > Domains`.
+
+Pastikan domain `sagalabimbel.id` aktif dan document root domain utama mengarah ke:
+
+```text
+/home/sagalab1/public_html
+```
+
+Dari screenshot File Manager, folder `public_html` sudah ada. Untuk frontend Sagala Bimbel, gunakan folder itu sebagai tempat upload hasil build React.
+
+### 2. Buat subdomain API
+
+Buka menu `Domains` atau `Subdomains`.
+
+Buat subdomain:
+
+```text
+api.sagalabimbel.id
+```
+
+Jika cPanel meminta document root subdomain, isi sementara:
+
+```text
+/home/sagalab1/sagalabimbel-api
+```
+
+Jika nanti Node.js App memakai `Application URL: api.sagalabimbel.id`, cPanel/Passenger akan menghubungkan URL tersebut ke app root backend.
+
+### 3. Buat database PostgreSQL baru
+
+Buka menu `Database > PostgreSQL Databases` seperti pada screenshot.
+
+Buat database dengan nama:
+
+```text
+sagalab1_sagalabimbel
+```
+
+Buat user database dengan nama:
+
+```text
+sagalab1_sagalabimbel_app
+```
+
+Buat password kuat dan simpan. Setelah user dibuat, pada bagian `Add User To Database`, pilih:
+
+```text
+User: sagalab1_sagalabimbel_app
+Database: sagalab1_sagalabimbel
+```
+
+Klik `Submit`, lalu berikan semua privileges yang tersedia.
+
+Jangan memakai database lama milik website lain. Gunakan database baru khusus Sagala Bimbel agar data tidak bercampur.
+
+### 4. Buat Node.js App backend
+
+Buka menu `Setup Node.js App` atau `Node.js` seperti pada screenshot.
+
+Klik `Create Application`, lalu isi:
+
+```text
+Node.js version: 20.x
+Application mode: production
+Application root: sagalabimbel-api
+Application URL: api.sagalabimbel.id
+Application startup file: index.js
+```
+
+Setelah app dibuat, jangan isi `PORT` manual. cPanel/Passenger akan mengatur `PORT` otomatis.
+
+### 5. Isi environment backend di Node.js App
+
+Di halaman Node.js App, isi environment variables berikut:
+
+```env
+NODE_ENV=production
+DATABASE_URL=postgresql://sagalab1_sagalabimbel_app:sagala123!@localhost:5432/sagalab1_sagalabimbel?schema=public
+JWT_SECRET=isi_random_minimal_16_karakter
+TOKEN_EXPIRES_IN=7d
+CORS_ORIGIN=https://sagalabimbel.id,https://www.sagalabimbel.id
+FRONTEND_URL=https://sagalabimbel.id
+MIDTRANS_SERVER_KEY=isi_server_key_midtrans
+MIDTRANS_CLIENT_KEY=isi_client_key_midtrans
+MIDTRANS_IS_PRODUCTION=true
+```
+
+Ganti `PASSWORD_DATABASE` dengan password user PostgreSQL yang dibuat di cPanel.
+
+Jika Midtrans belum siap, key Midtrans boleh dikosongkan sementara. Fitur checkout online tidak akan berjalan penuh sampai key Midtrans benar.
+
+### 6. Upload backend ke folder app
+
+Di File Manager atau FTP, buat folder:
+
+```text
+/home/sagalab1/sagalabimbel-api
+```
+
+Upload isi folder lokal `server/` ke folder tersebut.
+
+File/folder backend yang perlu diupload:
+
+- `server/index.js` ke `/home/sagalab1/sagalabimbel-api/index.js`
+- `server/package.json` ke `/home/sagalab1/sagalabimbel-api/package.json`
+- `server/package-lock.json` ke `/home/sagalab1/sagalabimbel-api/package-lock.json`
+- `server/tsconfig.json` ke `/home/sagalab1/sagalabimbel-api/tsconfig.json`
+- `server/src/` ke `/home/sagalab1/sagalabimbel-api/src/`
+- `server/prisma/` ke `/home/sagalab1/sagalabimbel-api/prisma/`
+
+Jangan upload folder berikut:
+
+- `server/node_modules/`
+- file `.env` pribadi
+- file zip lama
+- folder frontend `src/` ke backend
+
+### 7. Install dan migrate backend lewat Terminal cPanel
+
+Buka menu `Terminal` seperti pada screenshot, lalu jalankan:
+
+```bash
+cd /home/sagalab1/sagalabimbel-api
+rm -rf node_modules dist
+npm ci --include=dev
+npm run build
+npx prisma generate
+npx prisma migrate deploy
+npm run prisma:seed
+```
+
+Setelah selesai, kembali ke `Setup Node.js App`, klik `Restart` pada app `api.sagalabimbel.id`.
+
+### 8. Test backend
+
+Di Terminal cPanel, jalankan:
+
+```bash
+curl -i https://api.sagalabimbel.id/health
+curl -i https://api.sagalabimbel.id/api/packages
+```
+
+Hasil yang benar:
+
+- Status HTTP `200`.
+- Response berbentuk JSON.
+- Bukan halaman HTML error cPanel/Passenger.
+
+### 8A. Buat akun admin pertama jika database masih kosong
+
+Jika belum ada akun admin sama sekali, buat akun admin pertama lewat Terminal cPanel setelah migration selesai.
+
+Jalankan:
+
+```bash
+cd /home/sagalab1/sagalabimbel-api
+node <<'NODE'
+const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
+
+const prisma = new PrismaClient();
+
+async function main() {
+  const username = 'admin_sagala';
+  const password = 'admin123';
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  await prisma.user.upsert({
+    where: { username },
+    update: {
+      name: 'Admin Sagala',
+      passwordHash,
+      role: 'admin',
+      provider: 'STANDARD',
+      registrationSource: 'ADMIN_CREATED',
+      isValidated: true,
+      sessionVersion: 1
+    },
+    create: {
+      name: 'Admin Sagala',
+      username,
+      email: `${username}@sagalabimbel.local`,
+      passwordHash,
+      role: 'admin',
+      provider: 'STANDARD',
+      registrationSource: 'ADMIN_CREATED',
+      isValidated: true,
+      sessionVersion: 1
+    }
+  });
+
+  console.log('Admin dibuat. Username:', username, 'Password:', password);
+}
+
+main()
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
+NODE
+```
+
+Setelah berhasil login, segera ubah password admin dari dashboard agar tidak memakai password contoh.
+
+### 9. Build frontend di komputer lokal
+
+Di folder project lokal `Sagala-Bimbel`, jalankan:
+
+```powershell
+npm install
+Copy-Item .env.production.example .env.production
+npm run build
+```
+
+Sebelum `npm run build`, pastikan `.env.production` berisi:
+
+```env
+VITE_API_URL=https://api.sagalabimbel.id
+VITE_MIDTRANS_CLIENT_KEY=isi_client_key_midtrans
+VITE_MIDTRANS_SNAP_URL=https://app.midtrans.com/snap/snap.js
+```
+
+Tidak perlu menambahkan env OAuth pihak ketiga.
+
+### 10. Upload frontend ke public_html
+
+Setelah build berhasil, upload isi folder lokal:
+
+```text
+Sagala-Bimbel/dist/
+```
+
+Ke folder cPanel:
+
+```text
+/home/sagalab1/public_html
+```
+
+File/folder frontend yang harus ada di `public_html` setelah upload:
+
+- `index.html`
+- `assets/`
+- `favicon.png`
+- `favicon.ico`
+- `og-image.png`
+- `robots.txt`
+- `sitemap.xml`
+- `.htaccess`
+
+Cara aman upload frontend:
+
+1. Buka File Manager.
+2. Masuk ke `/home/sagalab1/public_html`.
+3. Backup file lama jika masih diperlukan.
+4. Hapus file frontend lama yang tidak dipakai, misalnya `default.html`, `index.html` lama, asset lama, dan file statis lama.
+5. Upload semua isi `dist/` ke `public_html`.
+6. Pastikan file `.htaccess` ikut terupload karena React membutuhkan fallback SPA.
+
+Jangan upload ke `public_html`:
+
+- folder `src/`
+- folder `server/`
+- folder `node_modules/`
+- `package.json`
+- `package-lock.json`
+- file `.env`
+- migration Prisma
+
+### 11. Verifikasi frontend
+
+Buka browser:
+
+```text
+https://sagalabimbel.id
+https://sagalabimbel.id/programs
+https://sagalabimbel.id/login
+https://sagalabimbel.id/register
+```
+
+Cek alur:
+
+- Register akun baru hanya dengan username dan password.
+- Login hanya dengan username dan password.
+- Logout berjalan.
+- Dashboard user terbuka setelah akun divalidasi admin.
+- `/admin` terbuka untuk akun role `admin` atau `teacher`.
+- Paket dan tryout tampil dari API production.
+
+## Apakah Bisa Edit Langsung Di cPanel?
+
+Bisa, tetapi hanya untuk perubahan kecil.
+
+Yang masih boleh diedit langsung di cPanel:
+
+- File env Node.js App di menu cPanel.
+- Nomor WhatsApp atau email pada file hasil build jika sangat darurat.
+- File `.htaccess` jika routing React bermasalah.
+
+Yang tidak disarankan diedit langsung di cPanel:
+
+- Halaman React di `src/`.
+- Login/register/admin/dashboard.
+- Backend TypeScript di `server/src/` tanpa build ulang.
+- Prisma schema/migrations tanpa menjalankan migration.
+
+Untuk revisi seperti auth, UI, warna, domain, admin, teacher, dan backend, cara aman adalah edit di lokal, build, lalu upload ulang `dist/` dan folder backend yang berubah.
+
+## File Yang Perlu Diupload Ulang Karena Revisi Ini
+
+Frontend, upload ulang hasil build `dist/` ke `/home/sagalab1/public_html`.
+
+Backend, upload ulang file/folder berikut ke `/home/sagalab1/sagalabimbel-api`:
+
+- `index.js`
+- `package.json`
+- `package-lock.json`
+- `tsconfig.json`
+- `src/`
+- `prisma/schema.prisma`
+- `prisma/migrations/20260606090000_add_username_login/`
+- `prisma/migrations/20260606091000_remove_google_oauth/`
+- `prisma/seed.ts`
+
+Setelah upload backend, jalankan ulang:
+
+```bash
+cd /home/sagalab1/sagalabimbel-api
+npm ci --include=dev
+npm run build
+npx prisma generate
+npx prisma migrate deploy
+npm run prisma:seed
+```
+
+Lalu restart Node.js App.
+
+## Catatan Akun Admin Pertama
+
+Jika database masih kosong, ikuti langkah `8A` untuk membuat akun admin pertama lewat Terminal cPanel. Setelah admin bisa login, admin dapat membuat akun student/teacher dari dashboard dengan username dan password.
+
+Akun student yang register sendiri akan berstatus menunggu validasi. Admin perlu mengaktifkan akun agar student bisa login dan memakai dashboard.

@@ -1,0 +1,8 @@
+ALTER TABLE "User"
+ADD COLUMN "isValidated" BOOLEAN NOT NULL DEFAULT true;
+
+ALTER TABLE "Package"
+ADD COLUMN "tryoutAccessStart" INTEGER NOT NULL DEFAULT 1,
+ADD COLUMN "tryoutAccessEnd" INTEGER,
+ADD COLUMN "latihanAccessStart" INTEGER NOT NULL DEFAULT 1,
+ADD COLUMN "latihanAccessEnd" INTEGER;

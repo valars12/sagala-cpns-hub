@@ -11,8 +11,15 @@ node_modules
 dist
 dist-ssr
 *.local
+server/node_modules
+server/dist
+server/prisma/dev.db
+server/prisma/prisma/dev.db
+server/.env
+*.zip
+*.tsbuildinfo
 
-# Editor directories and files in commits
+# Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea

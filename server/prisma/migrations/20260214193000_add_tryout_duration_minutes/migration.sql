@@ -1,0 +1,2 @@
+ALTER TABLE "Package"
+ADD COLUMN "tryoutDurationMinutes" INTEGER NOT NULL DEFAULT 100;
