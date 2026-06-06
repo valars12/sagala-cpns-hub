@@ -1572,6 +1572,77 @@ const PackageQuestionManager = ({
     });
   };
 
+  const applySessionSourceKeys = (sourceSessionKeys: string[]) => {
+    setPackageForm((prev) => ({
+      ...prev,
+      sessionSourceSessionKeys: Array.from(new Set(sourceSessionKeys))
+    }));
+  };
+
+  const getSessionSourceKeysByRange = ({
+    sessionType,
+    start,
+    end
+  }: {
+    sessionType?: QuestionSessionType;
+    start?: number;
+    end?: number | null;
+  }) => {
+    const safeStart = Math.max(start ?? 1, 1);
+    const safeEnd = end && end >= safeStart ? end : null;
+
+    return (questionSessions ?? [])
+      .filter((session) => {
+        if (sessionType && session.sessionType !== sessionType) return false;
+        if (session.sessionOrder < safeStart) return false;
+        if (safeEnd !== null && session.sessionOrder > safeEnd) return false;
+        return true;
+      })
+      .map((session) => session.key);
+  };
+
+  const applySessionSourcePreset = ({
+    sessionType,
+    start,
+    end
+  }: {
+    sessionType?: QuestionSessionType;
+    start?: number;
+    end?: number | null;
+  }) => {
+    applySessionSourceKeys(
+      getSessionSourceKeysByRange({
+        sessionType,
+        start,
+        end
+      })
+    );
+  };
+
+  const applySessionSourceFromAccessRange = () => {
+    const tryoutStart = Number(packageForm.tryoutAccessStart) || 1;
+    const tryoutEnd = packageForm.tryoutAccessEnd.trim()
+      ? Number(packageForm.tryoutAccessEnd)
+      : null;
+    const latihanStart = Number(packageForm.latihanAccessStart) || 1;
+    const latihanEnd = packageForm.latihanAccessEnd.trim()
+      ? Number(packageForm.latihanAccessEnd)
+      : null;
+
+    applySessionSourceKeys([
+      ...getSessionSourceKeysByRange({
+        sessionType: "TRYOUT",
+        start: tryoutStart,
+        end: tryoutEnd
+      }),
+      ...getSessionSourceKeysByRange({
+        sessionType: "LATIHAN",
+        start: latihanStart,
+        end: latihanEnd
+      })
+    ]);
+  };
+
   const applySessionAccessPreset = (start: number, end: number | null) => {
     const nextStart = String(Math.max(start, 1));
     const nextEnd = end === null ? "" : String(Math.max(end, start));
@@ -3155,6 +3226,111 @@ const PackageQuestionManager = ({
                   Pilih sesi TRYOUT/LATIHAN yang ingin dipakai paket ini. Daftar di bawah
                   otomatis diambil dari bank soal yang sudah pernah diinput admin.
                 </p>
+                <div className="mb-3 rounded-xl border border-primary/15 bg-primary/5 p-3">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-primary">
+                      Preset multi-select bank soal
+                    </span>
+                    <span className="rounded-full bg-background px-2.5 py-1 text-[11px] text-muted-foreground">
+                      {packageForm.sessionSourceSessionKeys.length}/
+                      {(questionSessions ?? []).length} sesi dipilih
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={applySessionSourceFromAccessRange}
+                      disabled={questionSessionsLoading || !(questionSessions ?? []).length}
+                    >
+                      Ikuti Batas Akses
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        applySessionSourcePreset({
+                          sessionType: "TRYOUT",
+                          start: 1,
+                          end: 10
+                        })
+                      }
+                      disabled={questionSessionsLoading || !(questionSessions ?? []).length}
+                    >
+                      Tryout 1 - 10
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        applySessionSourcePreset({
+                          sessionType: "TRYOUT",
+                          start: 1,
+                          end: 20
+                        })
+                      }
+                      disabled={questionSessionsLoading || !(questionSessions ?? []).length}
+                    >
+                      Tryout 1 - 20
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        applySessionSourcePreset({
+                          sessionType: "TRYOUT",
+                          start: 1,
+                          end: null
+                        })
+                      }
+                      disabled={questionSessionsLoading || !(questionSessions ?? []).length}
+                    >
+                      Semua Tryout
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        applySessionSourcePreset({
+                          sessionType: "LATIHAN",
+                          start: 1,
+                          end: null
+                        })
+                      }
+                      disabled={questionSessionsLoading || !(questionSessions ?? []).length}
+                    >
+                      Semua Latihan
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        applySessionSourcePreset({
+                          start: 1,
+                          end: null
+                        })
+                      }
+                      disabled={questionSessionsLoading || !(questionSessions ?? []).length}
+                    >
+                      Semua Sesi
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => applySessionSourceKeys([])}
+                      disabled={!packageForm.sessionSourceSessionKeys.length}
+                    >
+                      Kosongkan
+                    </Button>
+                  </div>
+                </div>
                 <div className="max-h-48 space-y-2 overflow-y-auto pr-1">
                   {(questionSessions ?? []).map((session) => (
                     <label

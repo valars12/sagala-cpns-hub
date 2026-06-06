@@ -77,6 +77,8 @@ UI/UX:
 - `src/pages/Login.tsx` dan `src/pages/Register.tsx`: layout auth dibuat berbeda dengan kartu gradient Sagala.
 - `src/components/Contact.tsx`: form konsultasi tidak meminta email pengunjung; hanya nama, WhatsApp, dan pesan.
 - `src/pages/PackageDetail.tsx`: pesan checkout tidak lagi meminta user mengecek email.
+- `src/pages/AdminDashboard.tsx`: dialog ACC Paket Tryout memiliki preset multi-select cepat untuk semua paket, CPNS, Kedinasan, dan tier paket.
+- `src/components/admin/PackageQuestionManager.tsx`: edit paket memiliki preset multi-select sumber bank soal seperti ikuti batas akses, Tryout 1-10, Tryout 1-20, semua Tryout, semua Latihan, semua sesi, dan kosongkan.
 
 Dependency:
 
@@ -431,3 +433,344 @@ Lalu restart Node.js App.
 Jika database masih kosong, ikuti langkah `8A` untuk membuat akun admin pertama lewat Terminal cPanel. Setelah admin bisa login, admin dapat membuat akun student/teacher dari dashboard dengan username dan password.
 
 Akun student yang register sendiri akan berstatus menunggu validasi. Admin perlu mengaktifkan akun agar student bisa login dan memakai dashboard.
+
+## Import Soal Dari File JSON Backup
+
+File seperti `question-backup-ap.json` tidak otomatis terbaca hanya karena sudah diupload ke File Manager. File itu harus dimasukkan ke database PostgreSQL, tepatnya ke tabel `Question`.
+
+Dari screenshot, file berada di:
+
+```text
+/home/sagalab1/sagalabimbel-api/question-backup-ap.json
+```
+
+### 1. Pastikan backend dan database sudah siap
+
+Di Terminal cPanel, jalankan:
+
+```bash
+cd /home/sagalab1/sagalabimbel-api
+npx prisma migrate deploy
+npm run prisma:seed
+```
+
+`npm run prisma:seed` penting karena paket harus sudah ada dulu. Soal hanya bisa terbaca jika setiap soal punya paket tujuan.
+
+Setelah import soal selesai, jangan menjalankan `npm run prisma:seed` lagi kecuali Anda memang ingin mengganti ulang bank soal dengan data default.
+
+### 2. Cek isi file backup
+
+Jalankan:
+
+```bash
+cd /home/sagalab1/sagalabimbel-api
+node <<'NODE'
+const fs = require('fs');
+const file = './question-backup-ap.json';
+const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
+const rows = Array.isArray(raw) ? raw : Array.isArray(raw.data) ? raw.data : [];
+console.log('Total data di file:', rows.length);
+console.log('Contoh key data pertama:', Object.keys(rows[0] || {}));
+console.log('Contoh paket:', rows[0]?.package || rows[0]?.packageTitle || rows[0]?.packageId || '-');
+NODE
+```
+
+Jika `Total data di file` bernilai `0`, berarti format file tidak sesuai atau file rusak.
+
+### 3. Cek paket yang tersedia di Sagala
+
+Jalankan:
+
+```bash
+cd /home/sagalab1/sagalabimbel-api
+node <<'NODE'
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
+async function main() {
+  const packages = await prisma.package.findMany({
+    select: { id: true, slug: true, title: true, category: true },
+    orderBy: [{ category: 'asc' }, { title: 'asc' }]
+  });
+  console.table(packages);
+}
+
+main()
+  .catch(console.error)
+  .finally(async () => prisma.$disconnect());
+NODE
+```
+
+Catat `slug` dan `title` paket. Import akan cocok otomatis jika slug/judul paket di file backup sama dengan paket Sagala.
+
+### 4. Jalankan import soal
+
+Script ini akan:
+
+- Membaca `question-backup-ap.json`.
+- Mengambil soal dari format export bank soal atau snapshot backup.
+- Mencocokkan paket berdasarkan `slug`, lalu `title`.
+- Menghapus soal lama pada paket target agar tidak dobel.
+- Memasukkan semua soal backup ke tabel `Question`.
+
+Jalankan:
+
+```bash
+cd /home/sagalab1/sagalabimbel-api
+node <<'NODE'
+const fs = require('fs');
+const path = require('path');
+const { PrismaClient } = require('@prisma/client');
+
+const prisma = new PrismaClient();
+const filePath = path.resolve('/home/sagalab1/sagalabimbel-api/question-backup-ap.json');
+
+const normalizeText = (value) => String(value ?? '').trim();
+const normalizeSlug = (value) => normalizeText(value).toLowerCase();
+const normalizeSessionType = (value) => {
+  const normalized = normalizeText(value).toUpperCase();
+  return normalized === 'LATIHAN' ? 'LATIHAN' : 'TRYOUT';
+};
+const normalizeQuestionCategory = (value) => {
+  const normalized = normalizeText(value).toUpperCase();
+  return ['TKP', 'TIU', 'TWK'].includes(normalized) ? normalized : 'TIU';
+};
+
+const parseMaybeJson = (value, fallback) => {
+  if (value === undefined || value === null || value === '') return fallback;
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+};
+
+const normalizeOptions = (value) => {
+  const parsed = parseMaybeJson(value, []);
+  if (!Array.isArray(parsed)) return [];
+  return parsed.map((option) => {
+    if (typeof option === 'string') {
+      return { text: option };
+    }
+    return {
+      text: normalizeText(option?.text),
+      imageUrl: option?.imageUrl ?? null,
+      score: option?.score ?? null
+    };
+  });
+};
+
+const toQuestionRow = (row) => {
+  if (row?.prompt) return row;
+  const snapshot = parseMaybeJson(row?.snapshot, null);
+  if (!snapshot?.prompt) return null;
+  return {
+    ...snapshot,
+    id: row.questionId || snapshot.id,
+    package: row.package || snapshot.package,
+    packageTitle: row.packageTitle || snapshot.packageTitle,
+    packageId: row.packageId || snapshot.packageId,
+    category: row.category || snapshot.category,
+    sessionType: row.sessionType || snapshot.sessionType,
+    sessionCode: row.sessionCode || snapshot.sessionCode,
+    sessionTitle: row.sessionTitle || snapshot.sessionTitle,
+    sessionOrder: row.sessionOrder || snapshot.sessionOrder,
+    subtestTitle: row.subtestTitle || snapshot.subtestTitle
+  };
+};
+
+const buildPackageLookup = (packages) => {
+  const bySlug = new Map();
+  const byTitle = new Map();
+
+  for (const pkg of packages) {
+    bySlug.set(normalizeSlug(pkg.slug), pkg);
+    byTitle.set(normalizeSlug(pkg.title), pkg);
+  }
+
+  return { bySlug, byTitle };
+};
+
+async function main() {
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`File tidak ditemukan: ${filePath}`);
+  }
+
+  const raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  const sourceRows = Array.isArray(raw) ? raw : Array.isArray(raw.data) ? raw.data : [];
+  const questionRows = sourceRows.map(toQuestionRow).filter(Boolean);
+
+  if (!questionRows.length) {
+    throw new Error('Tidak ada soal valid di file JSON. Cek format file backup.');
+  }
+
+  const packages = await prisma.package.findMany({
+    select: { id: true, slug: true, title: true, category: true }
+  });
+  const packageLookup = buildPackageLookup(packages);
+  const missingPackages = new Map();
+  const prepared = [];
+
+  for (const row of questionRows) {
+    const sourceSlug = normalizeSlug(row.package?.slug);
+    const sourceTitle = normalizeSlug(row.package?.title || row.packageTitle);
+    const targetPackage =
+      packageLookup.bySlug.get(sourceSlug) ||
+      packageLookup.byTitle.get(sourceTitle);
+
+    if (!targetPackage) {
+      const key = row.package?.slug || row.package?.title || row.packageTitle || row.packageId || 'tanpa-paket';
+      missingPackages.set(key, (missingPackages.get(key) || 0) + 1);
+      continue;
+    }
+
+    const options = normalizeOptions(row.options);
+    if (!normalizeText(row.prompt) || !options.length || !normalizeText(row.answer)) {
+      continue;
+    }
+
+    const data = {
+      packageId: targetPackage.id,
+      category: normalizeQuestionCategory(row.category),
+      sessionType: normalizeSessionType(row.sessionType),
+      sessionCode: normalizeText(row.sessionCode || `${normalizeSessionType(row.sessionType)}-${row.sessionOrder || 1}`),
+      sessionTitle: normalizeText(row.sessionTitle || `${normalizeSessionType(row.sessionType) === 'TRYOUT' ? 'Tryout' : 'Latihan'} ${row.sessionOrder || 1}`),
+      sessionOrder: Number.isFinite(Number(row.sessionOrder)) ? Number(row.sessionOrder) : 1,
+      questionOrder: Number.isFinite(Number(row.questionOrder)) ? Number(row.questionOrder) : prepared.length + 1,
+      subtestTitle: normalizeText(row.subtestTitle || 'Subtest Umum'),
+      prompt: normalizeText(row.prompt),
+      promptImageUrl: row.promptImageUrl || null,
+      promptPdfDataUrl: row.promptPdfDataUrl || null,
+      promptPdfFileName: row.promptPdfFileName || null,
+      options: JSON.stringify(options),
+      answer: normalizeText(row.answer),
+      explanation: row.explanation ? normalizeText(row.explanation) : null,
+      explanationImageUrl: row.explanationImageUrl || null
+    };
+
+    if (row.id && typeof row.id === 'string' && row.id.length <= 120) {
+      data.id = row.id;
+    }
+
+    prepared.push(data);
+  }
+
+  if (missingPackages.size) {
+    console.log('Ada paket dari file backup yang belum cocok dengan paket Sagala:');
+    console.table(Array.from(missingPackages.entries()).map(([packageName, total]) => ({ packageName, total })));
+    console.log('Import dibatalkan. Samakan slug/judul paket dulu, lalu jalankan ulang script.');
+    return;
+  }
+
+  if (!prepared.length) {
+    throw new Error('Tidak ada soal yang siap diimport setelah validasi prompt/options/answer.');
+  }
+
+  const targetPackageIds = Array.from(new Set(prepared.map((item) => item.packageId)));
+  await prisma.question.deleteMany({
+    where: {
+      packageId: { in: targetPackageIds }
+    }
+  });
+
+  const batchSize = 200;
+  let imported = 0;
+  for (let index = 0; index < prepared.length; index += batchSize) {
+    const batch = prepared.slice(index, index + batchSize);
+    const result = await prisma.question.createMany({
+      data: batch,
+      skipDuplicates: true
+    });
+    imported += result.count;
+  }
+
+  console.log('Import selesai.');
+  console.log('Soal terbaca dari file:', questionRows.length);
+  console.log('Soal masuk database:', imported);
+  console.log('Paket yang diisi:', targetPackageIds.length);
+}
+
+main()
+  .catch((error) => {
+    console.error('Import gagal:', error);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
+NODE
+```
+
+Jika script menampilkan daftar paket yang belum cocok, jangan lanjut dulu. Samakan `slug` atau `title` paket di database Sagala dengan file backup, atau sesuaikan data paket lewat dashboard admin.
+
+### 5. Cek jumlah soal setelah import
+
+Jalankan:
+
+```bash
+cd /home/sagalab1/sagalabimbel-api
+node <<'NODE'
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
+async function main() {
+  const rows = await prisma.question.groupBy({
+    by: ['packageId', 'sessionType', 'sessionOrder'],
+    _count: { _all: true },
+    orderBy: [{ packageId: 'asc' }, { sessionType: 'asc' }, { sessionOrder: 'asc' }]
+  });
+
+  const packages = await prisma.package.findMany({
+    select: { id: true, title: true, slug: true }
+  });
+  const packageMap = new Map(packages.map((pkg) => [pkg.id, pkg]));
+
+  console.table(
+    rows.map((row) => ({
+      paket: packageMap.get(row.packageId)?.title || row.packageId,
+      slug: packageMap.get(row.packageId)?.slug || '-',
+      tipe: row.sessionType,
+      sesi: row.sessionOrder,
+      totalSoal: row._count._all
+    }))
+  );
+}
+
+main()
+  .catch(console.error)
+  .finally(async () => prisma.$disconnect());
+NODE
+```
+
+Pastikan total soal per paket/sesi sesuai dengan data backup.
+
+### 6. Restart backend
+
+Setelah import selesai, restart Node.js App di cPanel:
+
+```text
+Setup Node.js App > api.sagalabimbel.id > Restart
+```
+
+### 7. Cek dari website
+
+Login sebagai admin, lalu buka:
+
+```text
+https://sagalabimbel.id/admin
+```
+
+Cek menu:
+
+- `Bank Soal`
+- `Paket`
+- `Monitoring Skor`
+- Halaman latihan/tryout dari akun student yang punya akses paket
+
+Jika soal belum muncul, cek:
+
+- `https://api.sagalabimbel.id/api/packages` harus response JSON.
+- Paket tujuan harus sama dengan paket yang punya soal.
+- User student harus punya akses paket atau pembayaran `PAID`.
+- Node.js App harus sudah direstart setelah import.

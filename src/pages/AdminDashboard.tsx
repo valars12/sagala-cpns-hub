@@ -537,6 +537,34 @@ const AdminDashboard = () => {
     );
   };
 
+  const applyAccessPackagePreset = (
+    predicate: (pkg: AdminPackage) => boolean
+  ) => {
+    const lockedIds = new Set(lockedPackageIds);
+    const next = new Set(lockedPackageIds);
+
+    for (const pkg of packages ?? []) {
+      if (lockedIds.has(pkg.id)) {
+        next.add(pkg.id);
+        continue;
+      }
+      if (predicate(pkg)) {
+        next.add(pkg.id);
+      }
+    }
+
+    setAccessPackageIds(Array.from(next));
+  };
+
+  const applyAccessPackageTextPreset = (keyword: string) => {
+    const normalizedKeyword = keyword.toLowerCase();
+    applyAccessPackagePreset((pkg) =>
+      [pkg.title, pkg.category, pkg.badge, pkg.level]
+        .filter(Boolean)
+        .some((value) => value!.toLowerCase().includes(normalizedKeyword))
+    );
+  };
+
   const handleSelectAllAccessPackages = () => {
     setAccessPackageIds((prev) => {
       const next = new Set(prev);
@@ -2015,6 +2043,82 @@ const AdminDashboard = () => {
                       onClick={handleClearAccessPackages}
                     >
                       Kosongkan
+                    </Button>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-primary/15 bg-primary/5 px-3 py-3">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs font-semibold text-primary">
+                      Preset ACC cepat
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Pilih otomatis berdasarkan kategori atau tier paket.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={handleSelectAllAccessPackages}
+                    >
+                      Semua Paket
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => applyAccessPackageTextPreset("cpns")}
+                    >
+                      Semua CPNS
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => applyAccessPackageTextPreset("kedinasan")}
+                    >
+                      Semua Kedinasan
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => applyAccessPackageTextPreset("hemat")}
+                    >
+                      Hemat
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => applyAccessPackageTextPreset("basic")}
+                    >
+                      Basic
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => applyAccessPackageTextPreset("reguler")}
+                    >
+                      Reguler
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => applyAccessPackageTextPreset("exclusive")}
+                    >
+                      Exclusive
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => applyAccessPackageTextPreset("ultimate")}
+                    >
+                      Ultimate
                     </Button>
                   </div>
                 </div>
